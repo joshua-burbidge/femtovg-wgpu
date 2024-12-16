@@ -15,11 +15,17 @@ mod non_wasm_imports {
 #[cfg(not(target_arch = "wasm32"))]
 use non_wasm_imports::*;
 
-use super::{run, WindowSurface};
+use crate::{run, App};
+
+use super::WindowSurface;
 
 use femtovg::{renderer::OpenGl, Canvas};
 use std::sync::Arc;
-use winit::{dpi::PhysicalSize, event_loop::EventLoop, window::WindowAttributes};
+use winit::{
+    dpi::PhysicalSize,
+    event_loop::{ActiveEventLoop, EventLoop},
+    window::{Window, WindowAttributes},
+};
 
 pub struct DemoSurface {
     #[cfg(not(target_arch = "wasm32"))]
@@ -50,11 +56,27 @@ impl WindowSurface for DemoSurface {
     }
 }
 
+// this gets called on start
+pub fn init_event_loop() {
+    let event_loop = EventLoop::new().unwrap();
+
+    let mut app = App::<DemoSurface>::default();
+
+    event_loop.run_app(&mut app).expect("failed to run app");
+}
+
+// this needs to get called on resume, not start
 pub async fn start_opengl(
+    event_loop: &ActiveEventLoop,
     #[cfg(not(target_arch = "wasm32"))] width: u32,
     #[cfg(not(target_arch = "wasm32"))] height: u32,
     #[cfg(not(target_arch = "wasm32"))] title: &'static str,
     #[cfg(not(target_arch = "wasm32"))] resizeable: bool,
+) -> (
+    // Canvas<<DemoSurface as WindowSurface>::Renderer>,
+    Canvas<OpenGl>,
+    DemoSurface,
+    Arc<Window>,
 ) {
     println!("using openGL...");
     // This provides better error messages in debug mode.
@@ -62,7 +84,7 @@ pub async fn start_opengl(
     #[cfg(all(debug_assertions, target_arch = "wasm32"))]
     console_error_panic_hook::set_once();
 
-    let event_loop = EventLoop::new().unwrap();
+    // let event_loop = EventLoop::new().unwrap();
 
     #[cfg(not(target_arch = "wasm32"))]
     let (canvas, window, context, surface) = {
@@ -76,7 +98,7 @@ pub async fn start_opengl(
         let display_builder = DisplayBuilder::new().with_window_attributes(Some(window_attr));
 
         let (window, gl_config) = display_builder
-            .build(&event_loop, template, |mut configs| configs.next().unwrap())
+            .build(event_loop, template, |mut configs| configs.next().unwrap())
             .unwrap();
 
         let window = window.unwrap();
@@ -170,5 +192,6 @@ pub async fn start_opengl(
         surface,
     };
 
-    run(canvas, event_loop, demo_surface, Arc::new(window));
+    // run(canvas, event_loop, demo_surface, Arc::new(window));
+    (canvas, demo_surface, Arc::new(window))
 }

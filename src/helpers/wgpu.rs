@@ -34,6 +34,15 @@ impl WindowSurface for DemoSurface {
     }
 }
 
+// this gets called on start
+pub fn init_event_loop() {
+    let event_loop = EventLoop::new().unwrap();
+
+    let mut app = App::<DemoSurface>::default();
+
+    event_loop.run_app(&mut app).expect("failed to run app");
+}
+
 pub async fn start_wgpu(
     #[cfg(not(target_arch = "wasm32"))] width: u32,
     #[cfg(not(target_arch = "wasm32"))] height: u32,

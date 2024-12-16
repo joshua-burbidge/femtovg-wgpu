@@ -1,4 +1,9 @@
-use super::run;
+use std::sync::Arc;
+
+use femtovg::{renderer::OpenGl, Canvas};
+use winit::{event_loop::ActiveEventLoop, window::Window};
+
+// use super::run;
 
 pub trait WindowSurface {
     type Renderer: femtovg::Renderer + 'static;
@@ -12,18 +17,29 @@ mod opengl;
 #[cfg(feature = "wgpu")]
 mod wgpu;
 
-pub fn start(
+pub fn init_event_loop() {
+    #[cfg(not(feature = "wgpu"))]
+    opengl::init_event_loop();
+    #[cfg(feature = "wgpu")]
+    wgpu::init_event_loop();
+}
+
+pub fn start<W: WindowSurface>(
+    event_loop: &ActiveEventLoop,
     #[cfg(not(target_arch = "wasm32"))] width: u32,
     #[cfg(not(target_arch = "wasm32"))] height: u32,
     #[cfg(not(target_arch = "wasm32"))] title: &'static str,
     #[cfg(not(target_arch = "wasm32"))] resizeable: bool,
-) {
+) -> (Canvas<OpenGl>, W, Arc<Window>) {
     #[cfg(not(feature = "wgpu"))]
     use opengl::start_opengl as async_start;
     #[cfg(feature = "wgpu")]
     use wgpu::start_wgpu as async_start;
     #[cfg(not(target_arch = "wasm32"))]
-    spin_on::spin_on(async_start(width, height, title, resizeable));
+    let result = spin_on::spin_on(async_start(event_loop, width, height, title, resizeable));
     #[cfg(target_arch = "wasm32")]
-    wasm_bindgen_futures::spawn_local(async_start());
+    wasm_bindgen_futures::spawn_local(async_start(event_loop));
+
+    // println!("{:?}", result);
+    result
 }
