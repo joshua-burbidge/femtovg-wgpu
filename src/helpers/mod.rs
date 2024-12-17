@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use femtovg::{renderer::OpenGl, Canvas};
-use opengl::DemoSurface as OpenGlSurface;
 use winit::{event_loop::ActiveEventLoop, window::Window};
 
 // use super::run;
@@ -22,7 +21,7 @@ pub fn init_event_loop() {
     #[cfg(not(feature = "wgpu"))]
     opengl::init_opengl_app();
     #[cfg(feature = "wgpu")]
-    wgpu::init_event_loop();
+    wgpu::init_wgpu_app();
 }
 
 // pub fn start_opengl<W: WindowSurface>(
