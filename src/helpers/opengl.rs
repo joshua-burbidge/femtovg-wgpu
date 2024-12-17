@@ -56,15 +56,6 @@ impl WindowSurface for DemoSurface {
     }
 }
 
-// fn test<W: WindowSurface>() -> W {
-//     let demo_surface = DemoSurface {
-//         #[cfg(not(target_arch = "wasm32"))]
-//         context,
-//         #[cfg(not(target_arch = "wasm32"))]
-//         surface,
-//     };
-// }
-
 // this gets called on start
 pub fn init_opengl_app() {
     let event_loop = EventLoop::new().unwrap();
@@ -82,12 +73,7 @@ pub fn start_opengl(
     #[cfg(not(target_arch = "wasm32"))] height: u32,
     #[cfg(not(target_arch = "wasm32"))] title: &'static str,
     #[cfg(not(target_arch = "wasm32"))] resizeable: bool,
-) -> (
-    // Canvas<<DemoSurface as WindowSurface>::Renderer>,
-    Canvas<OpenGl>,
-    DemoSurface,
-    Arc<Window>,
-) {
+) -> (Canvas<OpenGl>, DemoSurface, Arc<Window>) {
     println!("using openGL...");
     // This provides better error messages in debug mode.
     // It's disabled in release mode so it doesn't bloat up the file size.
@@ -228,14 +214,14 @@ impl Default for App {
 }
 impl ApplicationHandler for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        #[cfg(not(target_arch = "wasm32"))]
         let (canvas, surface, window) = start_opengl(event_loop, 1000, 600, "my demo", true);
+        #[cfg(target_arch = "wasm32")]
+        let (canvas, surface, window) = start_opengl(event_loop);
+
         self.canvas = Some(canvas);
         self.surface = Some(surface);
         self.window = Some(window);
-        // #[cfg(not(target_arch = "wasm32"))]
-        // helpers::start(event_loop, 1000, 600, "my demo", true);
-        // #[cfg(target_arch = "wasm32")]
-        // helpers::start(event_loop);
     }
 
     fn window_event(
@@ -281,6 +267,7 @@ impl ApplicationHandler for App {
                 delta: winit::event::MouseScrollDelta::LineDelta(_, y),
                 ..
             } => {
+                // it's a PixelDelta in wasm
                 let canvas = self.canvas.as_mut().unwrap();
 
                 let pt = canvas
@@ -323,8 +310,12 @@ impl ApplicationHandler for App {
             WindowEvent::CloseRequested => {
                 event_loop.exit();
             }
-            _ => println!("{:?}", event),
             // _ => {}
+            _ => {
+                println!("{:?}", event);
+                #[cfg(target_arch = "wasm32")]
+                web_sys::console::log_1(&format!("{:?}", event).into());
+            }
         }
     }
 }
