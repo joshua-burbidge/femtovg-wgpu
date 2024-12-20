@@ -37,13 +37,13 @@ pub struct DemoSurface {
 impl WindowSurface for DemoSurface {
     type Renderer = OpenGl;
 
-    fn resize(&mut self, width: u32, height: u32) {
+    fn resize(&mut self, _width: u32, _height: u32) {
         #[cfg(not(target_arch = "wasm32"))]
         {
             self.surface.resize(
                 &self.context,
-                width.try_into().unwrap(),
-                height.try_into().unwrap(),
+                _width.try_into().unwrap(),
+                _height.try_into().unwrap(),
             );
         }
     }
@@ -56,7 +56,6 @@ impl WindowSurface for DemoSurface {
     }
 }
 
-// this gets called on start
 pub fn init_opengl_app(
     event_loop: EventLoop<()>,
     canvas: Canvas<OpenGl>,
@@ -68,7 +67,6 @@ pub fn init_opengl_app(
     event_loop.run_app(&mut app).expect("failed to run app");
 }
 
-// this needs to get called on resume, not start
 // remove resizable arg
 // async to match wgpu initialization
 pub async fn start_opengl(
@@ -78,6 +76,7 @@ pub async fn start_opengl(
     #[cfg(not(target_arch = "wasm32"))] resizeable: bool,
 ) {
     println!("using openGL...");
+
     // This provides better error messages in debug mode.
     // It's disabled in release mode so it doesn't bloat up the file size.
     #[cfg(all(debug_assertions, target_arch = "wasm32"))]
@@ -175,6 +174,7 @@ pub async fn start_opengl(
         let renderer = OpenGl::new_from_html_canvas(&html_canvas).expect("Cannot create renderer");
 
         let window_attrs = WindowAttributes::default().with_canvas(Some(html_canvas));
+        #[allow(deprecated)]
         let window = event_loop.create_window(window_attrs).unwrap();
 
         let _ = window.request_inner_size(PhysicalSize::new(width, height));
@@ -191,8 +191,6 @@ pub async fn start_opengl(
         surface,
     };
 
-    // run(canvas, event_loop, demo_surface, Arc::new(window));
-    // (canvas, demo_surface, Arc::new(window))
     init_opengl_app(event_loop, canvas, demo_surface, Arc::new(window));
 }
 

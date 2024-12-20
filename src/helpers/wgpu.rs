@@ -39,7 +39,6 @@ impl WindowSurface for DemoSurface {
     }
 }
 
-// this gets called on start
 pub fn init_wgpu_app(
     event_loop: EventLoop<()>,
     canvas: Canvas<WGPURenderer>,
@@ -58,12 +57,13 @@ pub async fn start_wgpu(
     #[cfg(not(target_arch = "wasm32"))] resizeable: bool,
 ) {
     println!("using Wgpu...");
-    let event_loop = EventLoop::new().unwrap();
 
     // This provides better error messages in debug mode.
     // It's disabled in release mode so it doesn't bloat up the file size.
     #[cfg(all(debug_assertions, target_arch = "wasm32"))]
     console_error_panic_hook::set_once();
+
+    let event_loop = EventLoop::new().unwrap();
 
     #[cfg(not(target_arch = "wasm32"))]
     let window = {
@@ -108,7 +108,6 @@ pub async fn start_wgpu(
     let dx12_shader_compiler = wgpu::util::dx12_shader_compiler_from_env().unwrap_or_default();
     let gles_minor_version = wgpu::util::gles_minor_version_from_env().unwrap_or_default();
 
-    // it's getting stuck at the first await in wasm, works native
     let instance = wgpu::util::new_instance_with_webgpu_detection(wgpu::InstanceDescriptor {
         backends,
         flags: wgpu::InstanceFlags::from_build_config().with_env(),
@@ -188,10 +187,7 @@ impl App {
     }
 }
 impl ApplicationHandler for App {
-    fn resumed(&mut self, _event_loop: &ActiveEventLoop) {
-        #[cfg(target_arch = "wasm32")]
-        web_sys::console::log_1(&format!("initialized").into());
-    }
+    fn resumed(&mut self, _event_loop: &ActiveEventLoop) {}
 
     fn window_event(
         &mut self,

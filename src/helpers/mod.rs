@@ -1,12 +1,6 @@
-use std::sync::Arc;
-
-use femtovg::{renderer::OpenGl, Canvas};
-use winit::{event_loop::ActiveEventLoop, window::Window};
-
-// use super::run;
-
 pub trait WindowSurface {
     type Renderer: femtovg::Renderer + 'static;
+    // resize only used in non-wasm
     fn resize(&mut self, width: u32, height: u32);
     fn present(&self, canvas: &mut femtovg::Canvas<Self::Renderer>);
 }
@@ -31,6 +25,4 @@ pub fn start(
     spin_on::spin_on(async_start(width, height, title, resizeable));
     #[cfg(target_arch = "wasm32")]
     wasm_bindgen_futures::spawn_local(async_start());
-
-    // println!("{:?}", result);
 }
