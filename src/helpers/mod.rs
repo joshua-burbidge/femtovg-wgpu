@@ -17,20 +17,6 @@ mod opengl;
 #[cfg(feature = "wgpu")]
 mod wgpu;
 
-// pub fn start_opengl<W: WindowSurface>(
-//     event_loop: &ActiveEventLoop,
-//     width: u32,
-//     height: u32,
-//     title: &'static str,
-//     resizeable: bool,
-// ) -> (Canvas<OpenGl>, OpenGlSurface, Arc<Window>) {
-//     let result = spin_on::spin_on(opengl::start_opengl(
-//         event_loop, width, height, title, resizeable,
-//     ));
-
-//     result
-// }
-
 pub fn start(
     #[cfg(not(target_arch = "wasm32"))] width: u32,
     #[cfg(not(target_arch = "wasm32"))] height: u32,

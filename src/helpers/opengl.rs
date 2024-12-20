@@ -57,30 +57,33 @@ impl WindowSurface for DemoSurface {
 }
 
 // this gets called on start
-pub fn init_opengl_app() {
-    let event_loop = EventLoop::new().unwrap();
-
-    let mut app = App::default();
+pub fn init_opengl_app(
+    event_loop: EventLoop<()>,
+    canvas: Canvas<OpenGl>,
+    surface: DemoSurface,
+    window: Arc<Window>,
+) {
+    let mut app = App::new(canvas, surface, window);
 
     event_loop.run_app(&mut app).expect("failed to run app");
 }
 
 // this needs to get called on resume, not start
 // remove resizable arg
-pub fn start_opengl(
-    event_loop: &ActiveEventLoop,
+// async to match wgpu initialization
+pub async fn start_opengl(
     #[cfg(not(target_arch = "wasm32"))] width: u32,
     #[cfg(not(target_arch = "wasm32"))] height: u32,
     #[cfg(not(target_arch = "wasm32"))] title: &'static str,
     #[cfg(not(target_arch = "wasm32"))] resizeable: bool,
-) -> (Canvas<OpenGl>, DemoSurface, Arc<Window>) {
+) {
     println!("using openGL...");
     // This provides better error messages in debug mode.
     // It's disabled in release mode so it doesn't bloat up the file size.
     #[cfg(all(debug_assertions, target_arch = "wasm32"))]
     console_error_panic_hook::set_once();
 
-    // let event_loop = EventLoop::new().unwrap();
+    let event_loop = EventLoop::new().unwrap();
 
     #[cfg(not(target_arch = "wasm32"))]
     let (canvas, window, context, surface) = {
@@ -94,7 +97,7 @@ pub fn start_opengl(
         let display_builder = DisplayBuilder::new().with_window_attributes(Some(window_attr));
 
         let (window, gl_config) = display_builder
-            .build(event_loop, template, |mut configs| configs.next().unwrap())
+            .build(&event_loop, template, |mut configs| configs.next().unwrap())
             .unwrap();
 
         let window = window.unwrap();
@@ -189,40 +192,32 @@ pub fn start_opengl(
     };
 
     // run(canvas, event_loop, demo_surface, Arc::new(window));
-    (canvas, demo_surface, Arc::new(window))
+    // (canvas, demo_surface, Arc::new(window))
+    init_opengl_app(event_loop, canvas, demo_surface, Arc::new(window));
 }
 
 pub struct App {
     mousex: f32,
     mousey: f32,
     dragging: bool,
-    window: Option<Arc<Window>>,
-    canvas: Option<Canvas<OpenGl>>,
-    surface: Option<DemoSurface>,
+    window: Arc<Window>,
+    canvas: Canvas<OpenGl>,
+    surface: DemoSurface,
 }
-impl Default for App {
-    fn default() -> Self {
+impl App {
+    fn new(canvas: Canvas<OpenGl>, surface: DemoSurface, window: Arc<Window>) -> Self {
         App {
+            canvas,
+            surface,
+            window,
             mousex: 0.,
             mousey: 0.,
             dragging: false,
-            window: None,
-            canvas: None,
-            surface: None,
         }
     }
 }
 impl ApplicationHandler for App {
-    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        #[cfg(not(target_arch = "wasm32"))]
-        let (canvas, surface, window) = start_opengl(event_loop, 1000, 600, "my demo", true);
-        #[cfg(target_arch = "wasm32")]
-        let (canvas, surface, window) = start_opengl(event_loop);
-
-        self.canvas = Some(canvas);
-        self.surface = Some(surface);
-        self.window = Some(window);
-    }
+    fn resumed(&mut self, _event_loop: &ActiveEventLoop) {}
 
     fn window_event(
         &mut self,
@@ -233,7 +228,7 @@ impl ApplicationHandler for App {
         match event {
             #[cfg(not(target_arch = "wasm32"))]
             WindowEvent::Resized(physical_size) => {
-                let surface = self.surface.as_mut().unwrap();
+                let surface = &mut self.surface;
 
                 surface.resize(physical_size.width, physical_size.height);
             }
@@ -242,7 +237,7 @@ impl ApplicationHandler for App {
                 position,
                 ..
             } => {
-                let canvas = self.canvas.as_mut().unwrap();
+                let canvas = &mut self.canvas;
 
                 if self.dragging {
                     let p0 = canvas
@@ -256,7 +251,7 @@ impl ApplicationHandler for App {
 
                     canvas.translate(p1.0 - p0.0, p1.1 - p0.1);
 
-                    self.window.as_ref().unwrap().request_redraw();
+                    self.window.request_redraw();
                 }
 
                 self.mousex = position.x as f32;
@@ -268,7 +263,7 @@ impl ApplicationHandler for App {
                 ..
             } => {
                 // it's a PixelDelta in wasm
-                let canvas = self.canvas.as_mut().unwrap();
+                let canvas = &mut self.canvas;
 
                 let pt = canvas
                     .transform()
@@ -278,7 +273,7 @@ impl ApplicationHandler for App {
                 canvas.scale(1.0 + (y / 10.0), 1.0 + (y / 10.0));
                 canvas.translate(-pt.0, -pt.1);
 
-                self.window.as_ref().unwrap().request_redraw();
+                self.window.request_redraw();
             }
             WindowEvent::MouseInput {
                 button: MouseButton::Left,
@@ -289,9 +284,9 @@ impl ApplicationHandler for App {
                 ElementState::Released => self.dragging = false,
             },
             WindowEvent::RedrawRequested { .. } => {
-                let window = self.window.as_ref().unwrap();
-                let canvas = self.canvas.as_mut().unwrap();
-                let surface = self.surface.as_ref().unwrap();
+                let window = &self.window;
+                let canvas = &mut self.canvas;
+                let surface = &mut self.surface;
 
                 let size = window.inner_size();
                 let dpi_factor = window.scale_factor();
