@@ -9,15 +9,13 @@ use winit::{
 };
 
 mod helpers;
-use helpers::{init_event_loop, WindowSurface};
+use helpers::WindowSurface;
 
 fn main() {
-    init_event_loop();
-
-    // #[cfg(not(target_arch = "wasm32"))]
-    // helpers::start(1000, 600, "my demo", true);
-    // #[cfg(target_arch = "wasm32")]
-    // helpers::start();
+    #[cfg(not(target_arch = "wasm32"))]
+    helpers::start(1000, 600, "my demo", true);
+    #[cfg(target_arch = "wasm32")]
+    helpers::start();
 }
 // impl<W: WindowSurface> App<W> {
 //     pub fn new(

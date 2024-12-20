@@ -17,13 +17,6 @@ mod opengl;
 #[cfg(feature = "wgpu")]
 mod wgpu;
 
-pub fn init_event_loop() {
-    #[cfg(not(feature = "wgpu"))]
-    opengl::init_opengl_app();
-    #[cfg(feature = "wgpu")]
-    wgpu::init_wgpu_app();
-}
-
 // pub fn start_opengl<W: WindowSurface>(
 //     event_loop: &ActiveEventLoop,
 //     width: u32,
@@ -38,22 +31,20 @@ pub fn init_event_loop() {
 //     result
 // }
 
-// pub fn start<W: WindowSurface>(
-//     event_loop: &ActiveEventLoop,
-//     #[cfg(not(target_arch = "wasm32"))] width: u32,
-//     #[cfg(not(target_arch = "wasm32"))] height: u32,
-//     #[cfg(not(target_arch = "wasm32"))] title: &'static str,
-//     #[cfg(not(target_arch = "wasm32"))] resizeable: bool,
-// ) -> (Canvas<OpenGl>, W, Arc<Window>) {
-//     #[cfg(not(feature = "wgpu"))]
-//     use opengl::start_opengl as async_start;
-//     #[cfg(feature = "wgpu")]
-//     use wgpu::start_wgpu as async_start;
-//     #[cfg(not(target_arch = "wasm32"))]
-//     let result = spin_on::spin_on(async_start(event_loop, width, height, title, resizeable));
-//     #[cfg(target_arch = "wasm32")]
-//     wasm_bindgen_futures::spawn_local(async_start(event_loop));
+pub fn start(
+    #[cfg(not(target_arch = "wasm32"))] width: u32,
+    #[cfg(not(target_arch = "wasm32"))] height: u32,
+    #[cfg(not(target_arch = "wasm32"))] title: &'static str,
+    #[cfg(not(target_arch = "wasm32"))] resizeable: bool,
+) {
+    #[cfg(not(feature = "wgpu"))]
+    use opengl::start_opengl as async_start;
+    #[cfg(feature = "wgpu")]
+    use wgpu::start_wgpu as async_start;
+    #[cfg(not(target_arch = "wasm32"))]
+    spin_on::spin_on(async_start(width, height, title, resizeable));
+    #[cfg(target_arch = "wasm32")]
+    wasm_bindgen_futures::spawn_local(async_start());
 
-//     // println!("{:?}", result);
-//     result
-// }
+    // println!("{:?}", result);
+}
