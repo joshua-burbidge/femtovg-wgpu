@@ -73,7 +73,6 @@ pub async fn start_opengl(
     #[cfg(not(target_arch = "wasm32"))] width: u32,
     #[cfg(not(target_arch = "wasm32"))] height: u32,
     #[cfg(not(target_arch = "wasm32"))] title: &'static str,
-    #[cfg(not(target_arch = "wasm32"))] resizeable: bool,
 ) {
     println!("using openGL...");
 
@@ -88,8 +87,7 @@ pub async fn start_opengl(
     let (canvas, window, context, surface) = {
         let window_attr = WindowAttributes::default()
             .with_inner_size(PhysicalSize::new(width, height))
-            .with_title(title)
-            .with_resizable(resizeable);
+            .with_title(title);
 
         let template = ConfigTemplateBuilder::new().with_alpha_size(8);
 
