@@ -1,3 +1,4 @@
+use egui_winit::{egui::Context, State};
 #[cfg(not(target_arch = "wasm32"))]
 use winit::dpi::PhysicalSize;
 
@@ -16,6 +17,7 @@ pub struct DemoSurface {
     device: Arc<wgpu::Device>,
     surface_config: wgpu::SurfaceConfiguration,
     surface: wgpu::Surface<'static>,
+    queue: Arc<wgpu::Queue>,
 }
 
 impl WindowSurface for DemoSurface {
@@ -37,6 +39,16 @@ impl WindowSurface for DemoSurface {
 
         frame.present();
     }
+
+    fn get_device(&self) -> &Arc<wgpu::Device> {
+        &self.device
+    }
+    fn get_surface_config(&self) -> &wgpu::SurfaceConfiguration {
+        &self.surface_config
+    }
+    fn get_queue(&self) -> &Arc<wgpu::Queue> {
+        &self.queue
+    }
 }
 
 pub fn init_wgpu_app(
@@ -45,7 +57,13 @@ pub fn init_wgpu_app(
     surface: DemoSurface,
     window: Arc<Window>,
 ) {
-    let mut app = App::new(canvas, surface, window);
+    let egui_context = Context::default();
+
+    let viewport_id = egui_context.viewport_id();
+
+    let egui_winit_state = State::new(egui_context, viewport_id, &event_loop, None, None, None);
+
+    let mut app = App::new(canvas, surface, window, egui_winit_state);
 
     event_loop.run_app(&mut app).expect("failed to run app");
 }
@@ -149,14 +167,16 @@ pub async fn start_wgpu(
     surface.configure(&device, &surface_config);
 
     let device = Arc::new(device);
+    let queue = Arc::new(queue);
 
     let demo_surface = DemoSurface {
         device: device.clone(),
         surface_config,
         surface,
+        queue: queue.clone(),
     };
 
-    let renderer = WGPURenderer::new(device, Arc::new(queue));
+    let renderer = WGPURenderer::new(device, queue);
 
     let mut canvas = Canvas::new(renderer).expect("Cannot create canvas");
     canvas.set_size(width, height, window.scale_factor() as f32);

@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use egui_wgpu::Renderer;
+use egui_winit::{egui::CentralPanel, State};
 use femtovg::{Canvas, Color, Paint, Path};
 use helpers::WindowSurface;
 use winit::{
@@ -27,9 +29,17 @@ pub struct App<W: WindowSurface> {
     window: Arc<Window>,
     canvas: Canvas<W::Renderer>,
     surface: W,
+    egui_winit_state: State,
+    // egui_ctx: Context,
 }
 impl<W: WindowSurface> App<W> {
-    fn new(canvas: Canvas<W::Renderer>, surface: W, window: Arc<Window>) -> Self {
+    fn new(
+        canvas: Canvas<W::Renderer>,
+        surface: W,
+        window: Arc<Window>,
+        egui_winit_state: State,
+        // egui_ctx: &Context,
+    ) -> Self {
         App {
             canvas,
             surface,
@@ -38,6 +48,8 @@ impl<W: WindowSurface> App<W> {
             mousey: 0.,
             dragging: false,
             close_requested: false,
+            egui_winit_state,
+            // egui_ctx,
         }
     }
 }
@@ -121,6 +133,44 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                 let window = &self.window;
                 let canvas = &mut self.canvas;
                 let surface = &mut self.surface;
+
+                let egui_winit_state = &mut self.egui_winit_state;
+
+                let raw_input = egui_winit_state.take_egui_input(&window);
+                let egui_context = egui_winit_state.egui_ctx();
+
+                let full_output = egui_context.run(raw_input, |ctx| {
+                    // Build the UI
+                    CentralPanel::default().show(ctx, |ui| {
+                        ui.label("Hello, egui!");
+                        if ui.button("Click me").clicked() {
+                            println!("Button clicked!");
+                        }
+                    });
+                });
+                let platform_output = full_output.platform_output;
+                let clipped_primitives =
+                    egui_context.tessellate(full_output.shapes, full_output.pixels_per_point);
+                println!("{:?}", clipped_primitives);
+
+                egui_winit_state.handle_platform_output(&window, platform_output);
+
+                // let painter = Painter::new(egui_context);
+                let surface_config = surface.get_surface_config();
+                let device = surface.get_device();
+                let queue = surface.get_queue();
+
+                let mut egui_renderer =
+                    Renderer::new(device, surface_config.format, None, 1, false);
+
+                for (id, image_delta) in &full_output.textures_delta.set {
+                    egui_renderer.update_texture(&device, &queue, *id, &image_delta);
+                }
+                // now use renderer to draw the clipped primitives - how?
+
+                // update textures
+                // update buffers
+                // render - requires renderpass
 
                 let size = window.inner_size();
                 let dpi_factor = window.scale_factor();

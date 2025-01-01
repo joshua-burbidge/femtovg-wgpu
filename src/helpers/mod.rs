@@ -1,8 +1,15 @@
+use std::sync::Arc;
+
+use ::wgpu::{Device, Queue, SurfaceConfiguration};
+
 pub trait WindowSurface {
     type Renderer: femtovg::Renderer + 'static;
     // resize only used in non-wasm
     fn resize(&mut self, width: u32, height: u32);
     fn present(&self, canvas: &mut femtovg::Canvas<Self::Renderer>);
+    fn get_device(&self) -> &Arc<Device>;
+    fn get_surface_config(&self) -> &SurfaceConfiguration;
+    fn get_queue(&self) -> &Arc<Queue>;
 }
 
 #[cfg(not(feature = "wgpu"))]
