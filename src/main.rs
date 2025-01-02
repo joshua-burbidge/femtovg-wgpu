@@ -169,7 +169,7 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                 let surface_config = surface.get_surface_config();
                 let device = surface.get_device();
                 let queue = surface.get_queue();
-                let wgpu_surface = surface.get_surface();
+                let wgpu_surface: &wgpu::Surface<'static> = surface.get_surface();
 
                 let mut egui_renderer =
                     Renderer::new(device, surface_config.format, None, 1, false);
@@ -181,7 +181,6 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                 let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor {
                     label: Some("My render encoder"),
                 });
-                // let mut_encoder = &mut encoder;
                 let screen_descriptor = ScreenDescriptor {
                     pixels_per_point: full_output.pixels_per_point,
                     size_in_pixels: [1000, 600],
@@ -193,6 +192,7 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                     &clipped_primitives,
                     &screen_descriptor,
                 );
+
                 let surface_result = wgpu_surface.get_current_texture().unwrap();
                 let texture_view = surface_result.texture.create_view(&TextureViewDescriptor {
                     label: None,
@@ -205,28 +205,37 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                     array_layer_count: None,
                 });
 
-                // let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor {
-                //     label: Some("My render encoder"),
-                // });
-                let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
-                    label: Some("My render pass"),
-                    depth_stencil_attachment: None,
-                    timestamp_writes: None,
-                    occlusion_query_set: None,
-                    color_attachments: &[Some(RenderPassColorAttachment {
-                        view: &texture_view,
-                        resolve_target: None,
-                        ops: Operations {
-                            load: wgpu::LoadOp::Load,
-                            store: wgpu::StoreOp::Store,
-                        },
-                    })],
-                });
-                // .forget_lifetime();
-                // render_pass.
-                egui_renderer.render(&mut render_pass, &clipped_primitives, &screen_descriptor);
-                // drop(render_pass);
+                {
+                    // wgpu example uses a block like this - maybe it's an alternative to dropping render_pass
+                    let render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
+                        label: Some("My render pass"),
+                        depth_stencil_attachment: None,
+                        timestamp_writes: None,
+                        occlusion_query_set: None,
+                        color_attachments: &[Some(RenderPassColorAttachment {
+                            view: &texture_view,
+                            resolve_target: None,
+                            ops: Operations {
+                                load: wgpu::LoadOp::Load,
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                    });
 
+                    let mut static_render_pass = render_pass.forget_lifetime();
+
+                    //adding this line is what causes the encode lifetime error
+                    // resolved by calling forget_lifetime and using the return from that one here
+                    egui_renderer.render(
+                        &mut static_render_pass,
+                        &clipped_primitives,
+                        &screen_descriptor,
+                    );
+                }
+                queue.submit(std::iter::once(encoder.finish()));
+
+                // drop(render_pass);
+                // drop(surface_result);
                 // now use renderer to draw the clipped primitives - how?
 
                 // update textures

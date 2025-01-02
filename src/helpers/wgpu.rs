@@ -46,7 +46,7 @@ impl WindowSurface for DemoSurface {
     fn get_surface_config(&self) -> &wgpu::SurfaceConfiguration {
         &self.surface_config
     }
-    fn get_surface(&self) -> &wgpu::Surface {
+    fn get_surface(&self) -> &wgpu::Surface<'static> {
         &self.surface
     }
     fn get_queue(&self) -> &Arc<wgpu::Queue> {

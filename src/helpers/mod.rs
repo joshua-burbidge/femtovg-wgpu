@@ -10,7 +10,7 @@ pub trait WindowSurface {
     fn get_device(&self) -> &Arc<Device>;
     fn get_surface_config(&self) -> &SurfaceConfiguration;
     fn get_queue(&self) -> &Arc<Queue>;
-    fn get_surface(&self) -> &Surface;
+    fn get_surface(&self) -> &Surface<'static>;
 }
 
 #[cfg(not(feature = "wgpu"))]
