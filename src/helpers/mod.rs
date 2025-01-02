@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use ::wgpu::{Device, Queue, SurfaceConfiguration};
+use ::wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 
 pub trait WindowSurface {
     type Renderer: femtovg::Renderer + 'static;
@@ -10,6 +10,7 @@ pub trait WindowSurface {
     fn get_device(&self) -> &Arc<Device>;
     fn get_surface_config(&self) -> &SurfaceConfiguration;
     fn get_queue(&self) -> &Arc<Queue>;
+    fn get_surface(&self) -> &Surface;
 }
 
 #[cfg(not(feature = "wgpu"))]
