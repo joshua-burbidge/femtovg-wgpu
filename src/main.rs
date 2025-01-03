@@ -264,9 +264,11 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                 // canvas.flush_to_surface(&surface_result.texture);
 
                 // surface_result.present();
-                // surface.present(canvas, surface_result);
-                surface_result.present();
+                surface.present(canvas, surface_result);
+                // surface_result.present();
                 // this is calling flush_to_surface and swap_buffers
+
+                // TODO: initial egui render works, but next redraw doesn't work
             }
             WindowEvent::CloseRequested => {
                 event_loop.exit();
