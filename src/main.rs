@@ -155,6 +155,8 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                         ui.label("Hello, egui!");
                         ui.label("Hello, egui!");
                         ui.label("Hello, egui!");
+                        let mut text = "abc123";
+                        ui.text_edit_multiline(&mut text);
                         if ui.button("Click me").clicked() {
                             println!("Button clicked!");
                         }
@@ -240,6 +242,10 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                         &screen_descriptor,
                     );
                 }
+                for x in &full_output.textures_delta.free {
+                    egui_renderer.free_texture(x)
+                }
+
                 queue.submit(std::iter::once(encoder.finish()));
 
                 // drop(render_pass);
