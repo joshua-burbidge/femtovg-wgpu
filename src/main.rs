@@ -142,7 +142,7 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                 let dpi_factor = window.scale_factor();
 
                 canvas.set_size(size.width, size.height, dpi_factor as f32);
-                canvas.clear_rect(0, 0, size.width, size.height, Color::black());
+                // canvas.clear_rect(0, 0, size.width, size.height, Color::black());
 
                 let egui_winit_state = &mut self.egui_winit_state;
 
@@ -153,15 +153,20 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                     // Build the UI
                     CentralPanel::default().show(ctx, |ui| {
                         ui.label("Hello, egui!");
+                        ui.label("Hello, egui!");
+                        ui.label("Hello, egui!");
                         if ui.button("Click me").clicked() {
                             println!("Button clicked!");
+                        }
+                        if ui.button("Click me 2").clicked() {
+                            println!("Button 2 clicked!");
                         }
                     });
                 });
                 let platform_output = full_output.platform_output;
                 let clipped_primitives =
                     egui_context.tessellate(full_output.shapes, full_output.pixels_per_point);
-                println!("{:?}", clipped_primitives);
+                // println!("{:?}", clipped_primitives);
 
                 egui_winit_state.handle_platform_output(&window, platform_output);
 
@@ -178,6 +183,7 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                     egui_renderer.update_texture(&device, &queue, *id, &image_delta);
                 }
 
+                // not supposed to create everything on every render - should reuse
                 let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor {
                     label: Some("My render encoder"),
                 });
@@ -193,7 +199,9 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                     &screen_descriptor,
                 );
 
-                let surface_result = wgpu_surface.get_current_texture().unwrap();
+                let surface_result = wgpu_surface
+                    .get_current_texture()
+                    .expect(" failed to get current texture");
                 let texture_view = surface_result.texture.create_view(&TextureViewDescriptor {
                     label: None,
                     format: None,
@@ -247,7 +255,11 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                 path.line_to(100., 100.);
                 canvas.stroke_path(&path, &Paint::color(Color::white()));
 
-                surface.present(canvas);
+                // canvas.flush_to_surface(&surface_result.texture);
+
+                // surface_result.present();
+                // surface.present(canvas, surface_result);
+                surface_result.present();
                 // this is calling flush_to_surface and swap_buffers
             }
             WindowEvent::CloseRequested => {

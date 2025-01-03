@@ -1,4 +1,5 @@
 use egui_winit::{egui::Context, State};
+use wgpu::SurfaceTexture;
 #[cfg(not(target_arch = "wasm32"))]
 use winit::dpi::PhysicalSize;
 
@@ -29,15 +30,16 @@ impl WindowSurface for DemoSurface {
         self.surface.configure(&self.device, &self.surface_config);
     }
 
-    fn present(&self, canvas: &mut Canvas<Self::Renderer>) {
-        let frame = self
-            .surface
-            .get_current_texture()
-            .expect("unable to get next texture from swapchain");
+    fn present(&self, canvas: &mut Canvas<Self::Renderer>, surface_texture: SurfaceTexture) {
+        // removing this makes the surface error stop
+        // let frame = self
+        //     .surface
+        //     .get_current_texture()
+        //     .expect("unable to get next texture from swapchain");
 
-        canvas.flush_to_surface(&frame.texture);
+        canvas.flush_to_surface(&surface_texture.texture);
 
-        frame.present();
+        surface_texture.present();
     }
 
     fn get_device(&self) -> &Arc<wgpu::Device> {
