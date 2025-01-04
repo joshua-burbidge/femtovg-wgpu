@@ -1,6 +1,6 @@
 use egui_ui::Egui;
-use femtovg::{Canvas, Color, Paint, Path};
-use helpers::WindowSurface;
+use femtovg::{renderer::WGPURenderer, Canvas, Color, Paint, Path};
+use helpers::wgpu::WgpuWindowSurface;
 use std::sync::Arc;
 use winit::{
     application::ApplicationHandler,
@@ -20,18 +20,23 @@ fn main() {
     helpers::start();
 }
 
-pub struct App<W: WindowSurface> {
+pub struct App {
     mousex: f32,
     mousey: f32,
     dragging: bool,
     close_requested: bool,
     window: Arc<Window>,
-    canvas: Canvas<W::Renderer>,
-    surface: W,
+    canvas: Canvas<WGPURenderer>,
+    surface: WgpuWindowSurface,
     egui: Egui,
 }
-impl<W: WindowSurface> App<W> {
-    fn new(canvas: Canvas<W::Renderer>, surface: W, window: Arc<Window>, egui: Egui) -> Self {
+impl App {
+    fn new(
+        canvas: Canvas<WGPURenderer>,
+        surface: WgpuWindowSurface,
+        window: Arc<Window>,
+        egui: Egui,
+    ) -> Self {
         App {
             canvas,
             surface,
@@ -45,7 +50,7 @@ impl<W: WindowSurface> App<W> {
     }
 }
 
-impl<W: WindowSurface> ApplicationHandler for App<W> {
+impl ApplicationHandler for App {
     fn resumed(&mut self, _event_loop: &ActiveEventLoop) {
         self.canvas.reset_transform();
         self.canvas.translate(self.egui.ui.panel_width, 0.);
