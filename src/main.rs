@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use egui_wgpu::{Renderer, ScreenDescriptor};
+use egui_wgpu::ScreenDescriptor;
 use egui_winit::{egui::CentralPanel, State};
 use femtovg::{Canvas, Color, Paint, Path};
 use helpers::WindowSurface;
@@ -34,7 +34,7 @@ pub struct App<W: WindowSurface> {
     canvas: Canvas<W::Renderer>,
     surface: W,
     egui_winit_state: State,
-    // egui_ctx: Context,
+    egui_renderer: egui_wgpu::Renderer, // egui_ctx: Context,
 }
 impl<W: WindowSurface> App<W> {
     fn new(
@@ -42,7 +42,7 @@ impl<W: WindowSurface> App<W> {
         surface: W,
         window: Arc<Window>,
         egui_winit_state: State,
-        // egui_ctx: &Context,
+        egui_renderer: egui_wgpu::Renderer, // egui_ctx: &Context,
     ) -> Self {
         App {
             canvas,
@@ -53,6 +53,7 @@ impl<W: WindowSurface> App<W> {
             dragging: false,
             close_requested: false,
             egui_winit_state,
+            egui_renderer,
             // egui_ctx,
         }
     }
@@ -66,6 +67,18 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
+        let egui_winit_state = &mut self.egui_winit_state;
+
+        // let egui_context = egui_winit_state.egui_ctx();
+
+        let event_response = egui_winit_state.on_window_event(&self.window, &event);
+
+        println!("{:?}", event_response);
+
+        // if event_response.repaint {
+        //     self.window.request_redraw();
+        // }
+
         match event {
             #[cfg(not(target_arch = "wasm32"))]
             WindowEvent::Resized(physical_size) => {
@@ -172,14 +185,11 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
 
                 egui_winit_state.handle_platform_output(&window, platform_output);
 
-                // let painter = Painter::new(egui_context);
-                let surface_config = surface.get_surface_config();
                 let device = surface.get_device();
                 let queue = surface.get_queue();
                 let wgpu_surface: &wgpu::Surface<'static> = surface.get_surface();
 
-                let mut egui_renderer =
-                    Renderer::new(device, surface_config.format, None, 1, false);
+                let egui_renderer = &mut self.egui_renderer;
 
                 for (id, image_delta) in &full_output.textures_delta.set {
                     egui_renderer.update_texture(&device, &queue, *id, &image_delta);
@@ -267,8 +277,6 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                 surface.present(canvas, surface_result);
                 // surface_result.present();
                 // this is calling flush_to_surface and swap_buffers
-
-                // TODO: initial egui render works, but next redraw doesn't work
             }
             WindowEvent::CloseRequested => {
                 event_loop.exit();

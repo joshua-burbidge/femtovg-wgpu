@@ -1,3 +1,4 @@
+use egui_wgpu::Renderer;
 use egui_winit::{egui::Context, State};
 use wgpu::SurfaceTexture;
 #[cfg(not(target_arch = "wasm32"))]
@@ -68,7 +69,12 @@ pub fn init_wgpu_app(
 
     let egui_winit_state = State::new(egui_context, viewport_id, &event_loop, None, None, None);
 
-    let mut app = App::new(canvas, surface, window, egui_winit_state);
+    let surface_config = surface.get_surface_config();
+    let device = surface.get_device();
+
+    let egui_renderer = Renderer::new(device, surface_config.format, None, 1, false);
+
+    let mut app = App::new(canvas, surface, window, egui_winit_state, egui_renderer);
 
     event_loop.run_app(&mut app).expect("failed to run app");
 }
