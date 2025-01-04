@@ -5,6 +5,7 @@
 
 Egui
 - refactor to separate egui/wgpu/femtovg
+- maybe separate egui ui state vs egui rendering stuff
 
 should exist across multiple renders:
 - device

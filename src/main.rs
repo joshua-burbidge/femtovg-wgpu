@@ -27,8 +27,9 @@ fn main() {
 
 pub struct Egui {
     state: egui_winit::State,
-    context: egui::Context,
+    _context: egui::Context,
     renderer: egui_wgpu::Renderer,
+    text: String,
 }
 impl Egui {
     fn new(
@@ -45,9 +46,114 @@ impl Egui {
 
         Self {
             state: egui_winit_state,
-            context: egui_context,
+            _context: egui_context,
             renderer: egui_renderer,
+            text: "Initial text".to_owned(),
         }
+    }
+
+    fn render_ui(
+        &mut self,
+        window: &Window,
+        device: &wgpu::Device,
+        // encoder: &wgpu::CommandEncoder,
+        queue: &wgpu::Queue,
+        surface_texture: &wgpu::SurfaceTexture,
+    ) {
+        let state = &mut self.state;
+
+        let raw_input = state.take_egui_input(&window);
+        let egui_context = state.egui_ctx();
+
+        let full_output = egui_context.run(raw_input, |ctx| {
+            // Build the UI
+            egui::SidePanel::left("123").show(ctx, |ui| {
+                ui.label("Hello, egui!");
+                ui.label("Hello, egui!");
+                ui.label("Hello, egui!");
+                if ui.text_edit_multiline(&mut self.text).changed() {
+                    println!("changed text edit");
+                }
+                if ui.button("Click me").clicked() {
+                    println!("Button clicked!");
+                }
+                if ui.button("Click me 2").clicked() {
+                    println!("Button 2 clicked!");
+                }
+            });
+        });
+        let platform_output = full_output.platform_output;
+        let clipped_primitives =
+            egui_context.tessellate(full_output.shapes, full_output.pixels_per_point);
+
+        state.handle_platform_output(&window, platform_output);
+
+        let egui_renderer = &mut self.renderer;
+
+        for (id, image_delta) in &full_output.textures_delta.set {
+            egui_renderer.update_texture(device, &queue, *id, &image_delta);
+        }
+
+        let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor {
+            label: Some("My render encoder"),
+        });
+        let screen_descriptor = ScreenDescriptor {
+            pixels_per_point: full_output.pixels_per_point,
+            size_in_pixels: [1000, 600],
+        };
+        egui_renderer.update_buffers(
+            device,
+            queue,
+            &mut encoder,
+            &clipped_primitives,
+            &screen_descriptor,
+        );
+
+        // let surface_result = wgpu_surface
+        //     .get_current_texture()
+        //     .expect(" failed to get current texture");
+        let texture_view = surface_texture.texture.create_view(&TextureViewDescriptor {
+            label: None,
+            format: None,
+            dimension: None,
+            aspect: wgpu::TextureAspect::All, // this is default
+            base_mip_level: 0,
+            mip_level_count: None,
+            base_array_layer: 0,
+            array_layer_count: None,
+        });
+        {
+            // wgpu example uses a block like this - maybe it's an alternative to dropping render_pass
+            let render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
+                label: Some("My render pass"),
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+                color_attachments: &[Some(RenderPassColorAttachment {
+                    view: &texture_view,
+                    resolve_target: None,
+                    ops: Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+            });
+
+            let mut static_render_pass = render_pass.forget_lifetime();
+
+            //adding this line is what causes the encode lifetime error
+            // resolved by calling forget_lifetime and using the return from that one here
+            egui_renderer.render(
+                &mut static_render_pass,
+                &clipped_primitives,
+                &screen_descriptor,
+            );
+        }
+        for x in &full_output.textures_delta.free {
+            egui_renderer.free_texture(x)
+        }
+
+        queue.submit(std::iter::once(encoder.finish()));
     }
 }
 
@@ -56,7 +162,6 @@ pub struct App<W: WindowSurface> {
     mousey: f32,
     dragging: bool,
     close_requested: bool,
-    text: String,
     window: Arc<Window>,
     canvas: Canvas<W::Renderer>,
     surface: W,
@@ -73,7 +178,6 @@ impl<W: WindowSurface> App<W> {
             mousey: 0.,
             dragging: false,
             close_requested: false,
-            text: "Initial text".to_owned(),
         }
     }
 }
@@ -169,82 +273,21 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
             }
             WindowEvent::RedrawRequested { .. } => {
                 let window = &self.window;
-                let canvas = &mut self.canvas;
                 let surface = &mut self.surface;
 
-                let size = window.inner_size();
-                let dpi_factor = window.scale_factor();
-
-                canvas.set_size(size.width, size.height, dpi_factor as f32);
-                canvas.clear_rect(0, 0, size.width, size.height, Color::black());
-
-                let egui_winit_state = &mut self.egui.state;
-
-                let raw_input = egui_winit_state.take_egui_input(&window);
-                let egui_context = egui_winit_state.egui_ctx();
-
-                let full_output = egui_context.run(raw_input, |ctx| {
-                    // Build the UI
-                    egui::SidePanel::left("123").show(ctx, |ui| {
-                        ui.label("Hello, egui!");
-                        ui.label("Hello, egui!");
-                        ui.label("Hello, egui!");
-                        if ui.text_edit_multiline(&mut self.text).changed() {
-                            println!("changed text edit");
-                        }
-                        if ui.button("Click me").clicked() {
-                            println!("Button clicked!");
-                        }
-                        if ui.button("Click me 2").clicked() {
-                            println!("Button 2 clicked!");
-                        }
-                    });
-                });
-                let platform_output = full_output.platform_output;
-                let clipped_primitives =
-                    egui_context.tessellate(full_output.shapes, full_output.pixels_per_point);
-                // println!("{:?}", clipped_primitives);
-
-                egui_winit_state.handle_platform_output(&window, platform_output);
-
-                let device = surface.get_device();
-                let queue = surface.get_queue();
                 let wgpu_surface: &wgpu::Surface<'static> = surface.get_surface();
-
-                let egui_renderer = &mut self.egui.renderer;
-
-                for (id, image_delta) in &full_output.textures_delta.set {
-                    egui_renderer.update_texture(&device, &queue, *id, &image_delta);
-                }
-
-                let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor {
-                    label: Some("My render encoder"),
-                });
-                let screen_descriptor = ScreenDescriptor {
-                    pixels_per_point: full_output.pixels_per_point,
-                    size_in_pixels: [1000, 600],
-                };
-                egui_renderer.update_buffers(
-                    device,
-                    queue,
-                    &mut encoder,
-                    &clipped_primitives,
-                    &screen_descriptor,
-                );
 
                 let surface_result = wgpu_surface
                     .get_current_texture()
                     .expect(" failed to get current texture");
-                let texture_view = surface_result.texture.create_view(&TextureViewDescriptor {
-                    label: None,
-                    format: None,
-                    dimension: None,
-                    aspect: wgpu::TextureAspect::All, // this is default
-                    base_mip_level: 0,
-                    mip_level_count: None,
-                    base_array_layer: 0,
-                    array_layer_count: None,
-                });
+
+                // femtovg
+                let canvas = &mut self.canvas;
+
+                let size = window.inner_size();
+                let dpi_factor = window.scale_factor();
+                canvas.set_size(size.width, size.height, dpi_factor as f32);
+                canvas.clear_rect(0, 0, size.width, size.height, Color::black());
 
                 let mut path = Path::new();
                 path.move_to(500., 0.);
@@ -253,42 +296,12 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                 // this is canvas.flush_to_surface
                 surface.present(canvas, &surface_result);
 
-                {
-                    // wgpu example uses a block like this - maybe it's an alternative to dropping render_pass
-                    let render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
-                        label: Some("My render pass"),
-                        depth_stencil_attachment: None,
-                        timestamp_writes: None,
-                        occlusion_query_set: None,
-                        color_attachments: &[Some(RenderPassColorAttachment {
-                            view: &texture_view,
-                            resolve_target: None,
-                            ops: Operations {
-                                load: wgpu::LoadOp::Load,
-                                store: wgpu::StoreOp::Store,
-                            },
-                        })],
-                    });
+                // egui
+                let device = surface.get_device();
+                let queue = surface.get_queue();
+                self.egui.render_ui(window, device, queue, &surface_result);
 
-                    let mut static_render_pass = render_pass.forget_lifetime();
-
-                    //adding this line is what causes the encode lifetime error
-                    // resolved by calling forget_lifetime and using the return from that one here
-                    egui_renderer.render(
-                        &mut static_render_pass,
-                        &clipped_primitives,
-                        &screen_descriptor,
-                    );
-                }
-                for x in &full_output.textures_delta.free {
-                    egui_renderer.free_texture(x)
-                }
-
-                queue.submit(std::iter::once(encoder.finish()));
-
-                // drop(render_pass);
-                // drop(surface_result);
-
+                // both
                 surface_result.present();
             }
             WindowEvent::CloseRequested => {
