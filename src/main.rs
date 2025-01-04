@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use egui_wgpu::ScreenDescriptor;
-use egui_winit::{egui::CentralPanel, State};
+use egui_winit::{egui, State};
 use femtovg::{Canvas, Color, Paint, Path};
 use helpers::WindowSurface;
 use wgpu::{
@@ -78,9 +78,9 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
         if event_response.repaint {
             self.window.request_redraw();
         }
-        // if event_response.consumed {
-        //     return ();
-        // }
+        if event_response.consumed {
+            return ();
+        }
 
         match event {
             #[cfg(not(target_arch = "wasm32"))]
@@ -167,7 +167,7 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
 
                 let full_output = egui_context.run(raw_input, |ctx| {
                     // Build the UI
-                    CentralPanel::default().show(ctx, |ui| {
+                    egui::SidePanel::left("123").show(ctx, |ui| {
                         ui.label("Hello, egui!");
                         ui.label("Hello, egui!");
                         ui.label("Hello, egui!");

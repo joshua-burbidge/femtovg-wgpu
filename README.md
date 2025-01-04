@@ -3,6 +3,10 @@
 - try femtovg example with wgpu + wasm
 - look at wgpu wasm examples
 
+- crashes when femtovg render is entirely off-screen
+    - "trying to destroy SurfaceSemaphores still in use by SurfaceTexture"
+    - same error as i got when there were 2 calls to surface.get_current_texture
+
 Egui
 - initial render works, next redraw doesn't
     - don't recreate everything on redraw
