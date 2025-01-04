@@ -155,6 +155,20 @@ impl Egui {
 
         queue.submit(std::iter::once(encoder.finish()));
     }
+
+    fn handle_input(&mut self, window: &Window, event: &WindowEvent) -> bool {
+        let egui_winit_state = &mut self.state;
+        let event_response = egui_winit_state.on_window_event(window, &event);
+
+        // println!("{:?}", event);
+        // println!("{:?}", event_response);
+
+        if event_response.repaint {
+            window.request_redraw();
+        }
+
+        event_response.consumed
+    }
 }
 
 pub struct App<W: WindowSurface> {
@@ -191,16 +205,8 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
-        let egui_winit_state = &mut self.egui.state;
-        let event_response = egui_winit_state.on_window_event(&self.window, &event);
-
-        // println!("{:?}", event);
-        // println!("{:?}", event_response);
-
-        if event_response.repaint {
-            self.window.request_redraw();
-        }
-        if event_response.consumed {
+        let is_consumed = self.egui.handle_input(&self.window, &event);
+        if is_consumed {
             return ();
         }
 
