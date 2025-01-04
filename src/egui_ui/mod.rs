@@ -9,9 +9,9 @@ use wgpu::{
 };
 use winit::{event::WindowEvent, window::Window};
 
-struct Ui {
-    text: String,
-    panel_width: f32,
+pub struct Ui {
+    pub text: String,
+    pub panel_width: f32,
 }
 impl Ui {
     fn new() -> Self {
@@ -44,7 +44,7 @@ pub struct Egui {
     state: egui_winit::State,
     _context: egui::Context,
     renderer: egui_wgpu::Renderer,
-    ui: Ui,
+    pub ui: Ui,
 }
 impl Egui {
     pub fn new(

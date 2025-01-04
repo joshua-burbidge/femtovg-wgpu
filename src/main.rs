@@ -46,7 +46,12 @@ impl<W: WindowSurface> App<W> {
 }
 
 impl<W: WindowSurface> ApplicationHandler for App<W> {
-    fn resumed(&mut self, _event_loop: &ActiveEventLoop) {}
+    fn resumed(&mut self, _event_loop: &ActiveEventLoop) {
+        println!(
+            "panel width is {}, text is {}",
+            self.egui.ui.panel_width, self.egui.ui.text
+        );
+    }
 
     fn window_event(
         &mut self,
