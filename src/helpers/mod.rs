@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
-use ::wgpu::{Device, Queue, Surface, SurfaceConfiguration, SurfaceTexture};
+use ::wgpu::{Device, Queue, Surface, SurfaceTexture};
 
+// the purpose of this trait is to have separate implementations
+// for wgpu and opengl
 pub trait WindowSurface {
     type Renderer: femtovg::Renderer + 'static;
     // resize only used in non-wasm
@@ -12,7 +14,6 @@ pub trait WindowSurface {
         surface_texture: &SurfaceTexture,
     );
     fn get_device(&self) -> &Arc<Device>;
-    fn get_surface_config(&self) -> &SurfaceConfiguration;
     fn get_queue(&self) -> &Arc<Queue>;
     fn get_surface(&self) -> &Surface<'static>;
 }

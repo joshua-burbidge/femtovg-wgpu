@@ -1,4 +1,3 @@
-use wgpu::SurfaceTexture;
 #[cfg(not(target_arch = "wasm32"))]
 use winit::dpi::PhysicalSize;
 
@@ -29,7 +28,7 @@ impl WindowSurface for DemoSurface {
         self.surface.configure(&self.device, &self.surface_config);
     }
 
-    fn present(&self, canvas: &mut Canvas<Self::Renderer>, surface_texture: &SurfaceTexture) {
+    fn present(&self, canvas: &mut Canvas<Self::Renderer>, surface_texture: &wgpu::SurfaceTexture) {
         // removing this makes the surface error stop
         // let frame = self
         //     .surface
@@ -43,9 +42,6 @@ impl WindowSurface for DemoSurface {
 
     fn get_device(&self) -> &Arc<wgpu::Device> {
         &self.device
-    }
-    fn get_surface_config(&self) -> &wgpu::SurfaceConfiguration {
-        &self.surface_config
     }
     fn get_surface(&self) -> &wgpu::Surface<'static> {
         &self.surface
@@ -61,8 +57,8 @@ pub fn init_wgpu_app(
     surface: DemoSurface,
     window: Arc<Window>,
 ) {
-    let surface_config = surface.get_surface_config();
-    let device = surface.get_device();
+    let surface_config = &surface.surface_config;
+    let device = &surface.device;
 
     let egui = Egui::new(&window, device, surface_config.format);
 
