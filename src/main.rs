@@ -30,11 +30,12 @@ pub struct App<W: WindowSurface> {
     mousey: f32,
     dragging: bool,
     close_requested: bool,
+    text: String,
     window: Arc<Window>,
     canvas: Canvas<W::Renderer>,
     surface: W,
     egui_winit_state: State,
-    egui_renderer: egui_wgpu::Renderer, // egui_ctx: Context,
+    egui_renderer: egui_wgpu::Renderer,
 }
 impl<W: WindowSurface> App<W> {
     fn new(
@@ -42,7 +43,7 @@ impl<W: WindowSurface> App<W> {
         surface: W,
         window: Arc<Window>,
         egui_winit_state: State,
-        egui_renderer: egui_wgpu::Renderer, // egui_ctx: &Context,
+        egui_renderer: egui_wgpu::Renderer,
     ) -> Self {
         App {
             canvas,
@@ -52,12 +53,13 @@ impl<W: WindowSurface> App<W> {
             mousey: 0.,
             dragging: false,
             close_requested: false,
+            text: "Initial text".to_owned(),
             egui_winit_state,
             egui_renderer,
-            // egui_ctx,
         }
     }
 }
+
 impl<W: WindowSurface> ApplicationHandler for App<W> {
     fn resumed(&mut self, _event_loop: &ActiveEventLoop) {}
 
@@ -68,15 +70,16 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
         event: WindowEvent,
     ) {
         let egui_winit_state = &mut self.egui_winit_state;
-
-        // let egui_context = egui_winit_state.egui_ctx();
-
         let event_response = egui_winit_state.on_window_event(&self.window, &event);
 
-        println!("{:?}", event_response);
+        // println!("{:?}", event);
+        // println!("{:?}", event_response);
 
-        // if event_response.repaint {
-        //     self.window.request_redraw();
+        if event_response.repaint {
+            self.window.request_redraw();
+        }
+        // if event_response.consumed {
+        //     return ();
         // }
 
         match event {
@@ -168,8 +171,9 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                         ui.label("Hello, egui!");
                         ui.label("Hello, egui!");
                         ui.label("Hello, egui!");
-                        let mut text = "abc123";
-                        ui.text_edit_multiline(&mut text);
+                        if ui.text_edit_multiline(&mut self.text).changed() {
+                            println!("changed text edit");
+                        }
                         if ui.button("Click me").clicked() {
                             println!("Button clicked!");
                         }
