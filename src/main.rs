@@ -47,6 +47,9 @@ impl<W: WindowSurface> App<W> {
 
 impl<W: WindowSurface> ApplicationHandler for App<W> {
     fn resumed(&mut self, _event_loop: &ActiveEventLoop) {
+        self.canvas.reset_transform();
+        self.canvas.translate(self.egui.ui.panel_width, 0.);
+
         println!(
             "panel width is {}, text is {}",
             self.egui.ui.panel_width, self.egui.ui.text
@@ -125,9 +128,18 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
             WindowEvent::KeyboardInput { event, .. } => {
                 let key = event.logical_key;
                 match key {
-                    keyboard::Key::Named(keyboard::NamedKey::Escape) => {
-                        self.close_requested = true;
-                    }
+                    keyboard::Key::Named(named_key) => match named_key {
+                        keyboard::NamedKey::Escape => {
+                            self.close_requested = true;
+                        }
+                        _ => {}
+                    },
+                    keyboard::Key::Character(c) => match c.as_str() {
+                        "r" => {
+                            println!("pressed r");
+                        }
+                        _ => {}
+                    },
                     _ => {}
                 }
             }
@@ -150,8 +162,8 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                 canvas.clear_rect(0, 0, size.width, size.height, Color::black());
 
                 let mut path = Path::new();
-                path.move_to(500., 0.);
-                path.line_to(600., 100.);
+                path.move_to(0., 0.);
+                path.line_to(300., 300.);
                 canvas.stroke_path(&path, &Paint::color(Color::white()));
                 // this is canvas.flush_to_surface
                 surface.present(canvas, &surface_result);
