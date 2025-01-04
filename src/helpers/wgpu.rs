@@ -84,7 +84,7 @@ pub async fn start_wgpu(
     #[cfg(not(target_arch = "wasm32"))]
     let window = {
         let window_attrs = WindowAttributes::default()
-            .with_inner_size(PhysicalSize::new(1000., 600.))
+            .with_inner_size(PhysicalSize::new(width, height))
             .with_title(title);
 
         #[allow(deprecated)]

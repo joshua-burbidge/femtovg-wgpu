@@ -100,9 +100,10 @@ impl Egui {
         let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor {
             label: Some("My render encoder"),
         });
+        let size = window.inner_size();
         let screen_descriptor = egui_wgpu::ScreenDescriptor {
             pixels_per_point: full_output.pixels_per_point,
-            size_in_pixels: [1000, 600],
+            size_in_pixels: [size.width, size.height],
         };
         egui_renderer.update_buffers(
             device,
@@ -141,7 +142,7 @@ impl Egui {
 
             let mut static_render_pass = render_pass.forget_lifetime();
 
-            //adding this line is what causes the encode lifetime error
+            // adding this line is what causes the encode lifetime error
             // resolved by calling forget_lifetime and using the return from that one here
             egui_renderer.render(
                 &mut static_render_pass,
