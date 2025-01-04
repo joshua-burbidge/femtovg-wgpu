@@ -31,7 +31,7 @@ impl WindowSurface for DemoSurface {
         self.surface.configure(&self.device, &self.surface_config);
     }
 
-    fn present(&self, canvas: &mut Canvas<Self::Renderer>, surface_texture: SurfaceTexture) {
+    fn present(&self, canvas: &mut Canvas<Self::Renderer>, surface_texture: &SurfaceTexture) {
         // removing this makes the surface error stop
         // let frame = self
         //     .surface
@@ -40,7 +40,7 @@ impl WindowSurface for DemoSurface {
 
         canvas.flush_to_surface(&surface_texture.texture);
 
-        surface_texture.present();
+        // surface_texture.present();
     }
 
     fn get_device(&self) -> &Arc<wgpu::Device> {

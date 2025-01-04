@@ -9,7 +9,7 @@ pub trait WindowSurface {
     fn present(
         &self,
         canvas: &mut femtovg::Canvas<Self::Renderer>,
-        surface_texture: SurfaceTexture,
+        surface_texture: &SurfaceTexture,
     );
     fn get_device(&self) -> &Arc<Device>;
     fn get_surface_config(&self) -> &SurfaceConfiguration;

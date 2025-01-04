@@ -158,7 +158,7 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                 let dpi_factor = window.scale_factor();
 
                 canvas.set_size(size.width, size.height, dpi_factor as f32);
-                // canvas.clear_rect(0, 0, size.width, size.height, Color::black());
+                canvas.clear_rect(0, 0, size.width, size.height, Color::black());
 
                 let egui_winit_state = &mut self.egui_winit_state;
 
@@ -199,7 +199,6 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                     egui_renderer.update_texture(&device, &queue, *id, &image_delta);
                 }
 
-                // not supposed to create everything on every render - should reuse
                 let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor {
                     label: Some("My render encoder"),
                 });
@@ -228,6 +227,13 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                     base_array_layer: 0,
                     array_layer_count: None,
                 });
+
+                let mut path = Path::new();
+                path.move_to(500., 0.);
+                path.line_to(600., 100.);
+                canvas.stroke_path(&path, &Paint::color(Color::white()));
+                // this is canvas.flush_to_surface
+                surface.present(canvas, &surface_result);
 
                 {
                     // wgpu example uses a block like this - maybe it's an alternative to dropping render_pass
@@ -264,23 +270,8 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
 
                 // drop(render_pass);
                 // drop(surface_result);
-                // now use renderer to draw the clipped primitives - how?
 
-                // update textures
-                // update buffers
-                // render - requires renderpass
-
-                let mut path = Path::new();
-                path.move_to(0., 0.);
-                path.line_to(100., 100.);
-                canvas.stroke_path(&path, &Paint::color(Color::white()));
-
-                // canvas.flush_to_surface(&surface_result.texture);
-
-                // surface_result.present();
-                surface.present(canvas, surface_result);
-                // surface_result.present();
-                // this is calling flush_to_surface and swap_buffers
+                surface_result.present();
             }
             WindowEvent::CloseRequested => {
                 event_loop.exit();
