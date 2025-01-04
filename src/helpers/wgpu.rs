@@ -1,5 +1,3 @@
-use egui_wgpu::Renderer;
-use egui_winit::{egui::Context, State};
 use wgpu::SurfaceTexture;
 #[cfg(not(target_arch = "wasm32"))]
 use winit::dpi::PhysicalSize;
@@ -11,7 +9,7 @@ use winit::{
     window::{Window, WindowAttributes},
 };
 
-use crate::App;
+use crate::{App, Egui};
 
 use super::WindowSurface;
 
@@ -63,18 +61,12 @@ pub fn init_wgpu_app(
     surface: DemoSurface,
     window: Arc<Window>,
 ) {
-    let egui_context = Context::default();
-
-    let viewport_id = egui_context.viewport_id();
-
-    let egui_winit_state = State::new(egui_context, viewport_id, &event_loop, None, None, None);
-
     let surface_config = surface.get_surface_config();
     let device = surface.get_device();
 
-    let egui_renderer = Renderer::new(device, surface_config.format, None, 1, false);
+    let egui = Egui::new(&window, device, surface_config.format);
 
-    let mut app = App::new(canvas, surface, window, egui_winit_state, egui_renderer);
+    let mut app = App::new(canvas, surface, window, egui);
 
     event_loop.run_app(&mut app).expect("failed to run app");
 }

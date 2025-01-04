@@ -25,6 +25,32 @@ fn main() {
     helpers::start();
 }
 
+pub struct Egui {
+    state: egui_winit::State,
+    context: egui::Context,
+    renderer: egui_wgpu::Renderer,
+}
+impl Egui {
+    fn new(
+        window: &Window,
+        device: &wgpu::Device,
+        output_color_format: wgpu::TextureFormat,
+    ) -> Self {
+        let egui_context = egui::Context::default();
+        let viewport_id = egui_context.viewport_id();
+        let egui_winit_state =
+            State::new(egui_context.clone(), viewport_id, window, None, None, None);
+
+        let egui_renderer = egui_wgpu::Renderer::new(device, output_color_format, None, 1, false);
+
+        Self {
+            state: egui_winit_state,
+            context: egui_context,
+            renderer: egui_renderer,
+        }
+    }
+}
+
 pub struct App<W: WindowSurface> {
     mousex: f32,
     mousey: f32,
@@ -34,28 +60,20 @@ pub struct App<W: WindowSurface> {
     window: Arc<Window>,
     canvas: Canvas<W::Renderer>,
     surface: W,
-    egui_winit_state: State,
-    egui_renderer: egui_wgpu::Renderer,
+    egui: Egui,
 }
 impl<W: WindowSurface> App<W> {
-    fn new(
-        canvas: Canvas<W::Renderer>,
-        surface: W,
-        window: Arc<Window>,
-        egui_winit_state: State,
-        egui_renderer: egui_wgpu::Renderer,
-    ) -> Self {
+    fn new(canvas: Canvas<W::Renderer>, surface: W, window: Arc<Window>, egui: Egui) -> Self {
         App {
             canvas,
             surface,
             window,
+            egui,
             mousex: 0.,
             mousey: 0.,
             dragging: false,
             close_requested: false,
             text: "Initial text".to_owned(),
-            egui_winit_state,
-            egui_renderer,
         }
     }
 }
@@ -69,7 +87,7 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
-        let egui_winit_state = &mut self.egui_winit_state;
+        let egui_winit_state = &mut self.egui.state;
         let event_response = egui_winit_state.on_window_event(&self.window, &event);
 
         // println!("{:?}", event);
@@ -160,7 +178,7 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                 canvas.set_size(size.width, size.height, dpi_factor as f32);
                 canvas.clear_rect(0, 0, size.width, size.height, Color::black());
 
-                let egui_winit_state = &mut self.egui_winit_state;
+                let egui_winit_state = &mut self.egui.state;
 
                 let raw_input = egui_winit_state.take_egui_input(&window);
                 let egui_context = egui_winit_state.egui_ctx();
@@ -193,7 +211,7 @@ impl<W: WindowSurface> ApplicationHandler for App<W> {
                 let queue = surface.get_queue();
                 let wgpu_surface: &wgpu::Surface<'static> = surface.get_surface();
 
-                let egui_renderer = &mut self.egui_renderer;
+                let egui_renderer = &mut self.egui.renderer;
 
                 for (id, image_delta) in &full_output.textures_delta.set {
                     egui_renderer.update_texture(&device, &queue, *id, &image_delta);
