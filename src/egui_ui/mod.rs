@@ -1,3 +1,6 @@
+use core::f32;
+
+use egui;
 use egui_wgpu;
 use egui_winit;
 use wgpu::{
@@ -6,13 +9,43 @@ use wgpu::{
 };
 use winit::{event::WindowEvent, window::Window};
 
+struct Ui {
+    text: String,
+    panel_width: f32,
+}
+impl Ui {
+    fn new() -> Self {
+        Self {
+            text: "Initial text".to_owned(),
+            panel_width: 200.,
+        }
+    }
+    fn ui(&mut self, ctx: &egui::Context) {
+        let panel = egui::SidePanel::left("main-ui-panel")
+            .exact_width(self.panel_width)
+            .resizable(false);
+
+        panel.show(ctx, |ui| {
+            ui.label("Hello, egui!");
+            ui.label("Hello, egui!");
+            ui.text_edit_multiline(&mut self.text);
+            ui.add(egui::TextEdit::multiline(&mut self.text).desired_width(f32::INFINITY));
+            if ui.button("Click me").clicked() {
+                println!("Button clicked!");
+            }
+            if ui.button("Click me 2").clicked() {
+                println!("Button 2 clicked!");
+            }
+        });
+    }
+}
+
 pub struct Egui {
     state: egui_winit::State,
     _context: egui::Context,
     renderer: egui_wgpu::Renderer,
-    text: String,
+    ui: Ui,
 }
-// TODO: separate into UI and rendering
 impl Egui {
     pub fn new(
         window: &Window,
@@ -26,11 +59,13 @@ impl Egui {
 
         let egui_renderer = egui_wgpu::Renderer::new(device, output_color_format, None, 1, false);
 
+        let ui = Ui::new();
+
         Self {
             state: egui_winit_state,
             _context: egui_context,
             renderer: egui_renderer,
-            text: "Initial text".to_owned(),
+            ui,
         }
     }
 
@@ -38,7 +73,6 @@ impl Egui {
         &mut self,
         window: &Window,
         device: &wgpu::Device,
-        // encoder: &wgpu::CommandEncoder,
         queue: &wgpu::Queue,
         surface_texture: &wgpu::SurfaceTexture,
     ) {
@@ -48,20 +82,7 @@ impl Egui {
         let egui_context = state.egui_ctx();
 
         let full_output = egui_context.run(raw_input, |ctx| {
-            egui::SidePanel::left("123").show(ctx, |ui| {
-                ui.label("Hello, egui!");
-                ui.label("Hello, egui!");
-                ui.label("Hello, egui!");
-                if ui.text_edit_multiline(&mut self.text).changed() {
-                    println!("changed text edit");
-                }
-                if ui.button("Click me").clicked() {
-                    println!("Button clicked!");
-                }
-                if ui.button("Click me 2").clicked() {
-                    println!("Button 2 clicked!");
-                }
-            });
+            self.ui.ui(ctx);
         });
 
         let platform_output = full_output.platform_output;
