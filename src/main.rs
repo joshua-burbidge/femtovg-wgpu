@@ -151,12 +151,7 @@ impl ApplicationHandler for App {
             WindowEvent::RedrawRequested { .. } => {
                 let window = &self.window;
                 let surface = &mut self.surface;
-
-                let wgpu_surface: &wgpu::Surface<'static> = surface.get_surface();
-
-                let surface_result = wgpu_surface
-                    .get_current_texture()
-                    .expect(" failed to get current texture");
+                let surface_texture = surface.get_surface_texture();
 
                 // femtovg
                 let canvas = &mut self.canvas;
@@ -166,20 +161,18 @@ impl ApplicationHandler for App {
                 canvas.set_size(size.width, size.height, dpi_factor as f32);
                 canvas.clear_rect(0, 0, size.width, size.height, Color::black());
 
-                let mut path = Path::new();
-                path.move_to(0., 0.);
-                path.line_to(300., 300.);
-                canvas.stroke_path(&path, &Paint::color(Color::white()));
-                // this is canvas.flush_to_surface
-                surface.present(canvas, &surface_result);
+                draw_app(canvas);
+                surface.present_canvas(canvas, &surface_texture);
 
                 // egui
                 let device = surface.get_device();
                 let queue = surface.get_queue();
-                self.egui.render_ui(window, device, queue, &surface_result);
+                self.egui.render_ui(window, device, queue, &surface_texture);
 
                 // both
-                surface_result.present();
+                surface_texture.present();
+                // maybe take the ui part out of the render_ui function and pass it in,
+                // so we can do the femtovg logic and ui logic before rendering
             }
             WindowEvent::CloseRequested => {
                 event_loop.exit();
@@ -200,4 +193,11 @@ impl ApplicationHandler for App {
             _event_loop.exit();
         }
     }
+}
+
+fn draw_app(canvas: &mut Canvas<WGPURenderer>) {
+    let mut path = Path::new();
+    path.move_to(0., 0.);
+    path.line_to(300., 300.);
+    canvas.stroke_path(&path, &Paint::color(Color::white()));
 }

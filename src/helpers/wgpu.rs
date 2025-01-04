@@ -18,15 +18,15 @@ pub struct WgpuWindowSurface {
 }
 
 impl WgpuWindowSurface {
-    // type Renderer = femtovg::renderer::WGPURenderer;
-
     pub fn resize(&mut self, width: u32, height: u32) {
         self.surface_config.width = width.max(1);
         self.surface_config.height = height.max(1);
         self.surface.configure(&self.device, &self.surface_config);
     }
 
-    pub fn present(
+    // want to use surface to get the texture, but it seems to error
+    // if you call surface.get_current_texture twice
+    pub fn present_canvas(
         &self,
         canvas: &mut Canvas<WGPURenderer>,
         surface_texture: &wgpu::SurfaceTexture,
@@ -38,15 +38,17 @@ impl WgpuWindowSurface {
         //     .expect("unable to get next texture from swapchain");
 
         canvas.flush_to_surface(&surface_texture.texture);
-
-        // surface_texture.present();
+    }
+    pub fn get_surface_texture(&self) -> wgpu::SurfaceTexture {
+        let surface_texture = self
+            .surface
+            .get_current_texture()
+            .expect(" failed to get current texture");
+        surface_texture
     }
 
     pub fn get_device(&self) -> &Arc<wgpu::Device> {
         &self.device
-    }
-    pub fn get_surface(&self) -> &wgpu::Surface<'static> {
-        &self.surface
     }
     pub fn get_queue(&self) -> &Arc<wgpu::Queue> {
         &self.queue
